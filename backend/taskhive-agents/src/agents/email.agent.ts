@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, FunctionDeclaration, GenerativeModel, Tool, defineAgent } from '@google/generative-ai/server';
+import { GoogleGenerativeAI, FunctionDeclaration, GenerativeModel, Tool, defineAgent, FunctionDeclarationSchemaType } from '@google/generative-ai/server';
 import { createTaskInFirestore } from '../tools/firestore.tools.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -11,17 +11,17 @@ const tools: Tool[] = [{
       name: 'createTaskInFirestore',
       description: 'Creates one or more new tasks in the user\'s Firestore database.',
       parameters: {
-        type: 'OBJECT',
+        type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX
         properties: {
           tasks: {
-            type: 'ARRAY',
+            type: FunctionDeclarationSchemaType.ARRAY, // <--- FIX
             description: 'A list of tasks to create.',
             items: {
-              type: 'OBJECT',
+              type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX
               properties: {
-                title: { type: 'STRING', description: 'The title of the task.' },
-                priority: { type: 'STRING', description: 'Priority: "low", "medium", "high", or "critical". Infer based on urgency.' },
-                dueDate: { type: 'STRING', description: 'The due date in ISO 8601 format. e.g., 2025-11-12T17:00:00Z. Must be a future date.' },
+                title: { type: FunctionDeclarationSchemaType.STRING, description: 'The title of the task.' }, // <--- FIX
+                priority: { type: FunctionDeclarationSchemaType.STRING, description: 'Priority: "low", "medium", "high", or "critical". Infer based on urgency.' }, // <--- FIX
+                dueDate: { type: FunctionDeclarationSchemaType.STRING, description: 'The due date in ISO 8601 format. e.g., 2025-11-12T17:00:00Z. Must be a future date.' }, // <--- FIX
               },
               required: ['title']
             }

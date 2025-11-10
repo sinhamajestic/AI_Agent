@@ -1,5 +1,6 @@
 import { Firestore, Timestamp } from '@google-cloud/firestore';
-import { Task, TaskPriority, TaskStatus } from '../../types.js';
+// --- FIX: Corrected the import path ---
+import { Task, TaskPriority, TaskStatus } from '../../../types.js';
 
 // Initialize Firestore
 export const db = new Firestore();

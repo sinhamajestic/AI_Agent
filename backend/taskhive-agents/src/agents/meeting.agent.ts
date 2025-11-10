@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, FunctionDeclaration, GenerativeModel, Tool, defineAgent } from '@google/generative-ai/server';
+import { GoogleGenerativeAI, FunctionDeclaration, GenerativeModel, Tool, defineAgent, FunctionDeclarationSchemaType } from '@google/generative-ai/server';
 import { createTaskInFirestore, createSummaryInFirestore } from '../tools/firestore.tools.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -12,18 +12,18 @@ const tools: Tool[] = [{
       name: 'saveMeetingSummaryAndTasks',
       description: 'Saves the meeting summary and all extracted action items to Firestore.',
       parameters: {
-        type: 'OBJECT',
+        type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX
         properties: {
-          summaryContent: { type: 'STRING', description: 'A concise executive summary of the meeting.' },
+          summaryContent: { type: FunctionDeclarationSchemaType.STRING, description: 'A concise executive summary of the meeting.' }, // <--- FIX
           actionItems: {
-            type: 'ARRAY',
+            type: FunctionDeclarationSchemaType.ARRAY, // <--- FIX
             description: 'A list of action items (tasks) extracted from the meeting.',
             items: {
-              type: 'OBJECT',
+              type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX
               properties: {
-                title: { type: 'STRING', description: 'The title of the task.' },
-                priority: { type: 'STRING', description: 'Priority: "low", "medium", "high", or "critical".' },
-                dueDate: { type: 'STRING', description: 'The due date in ISO 8601 format, if mentioned.' },
+                title: { type: FunctionDeclarationSchemaType.STRING, description: 'The title of the task.' }, // <--- FIX
+                priority: { type: FunctionDeclarationSchemaType.STRING, description: 'Priority: "low", "medium", "high", or "critical".' }, // <--- FIX
+                dueDate: { type: FunctionDeclarationSchemaType.STRING, description: 'The due date in ISO 8601 format, if mentioned.' }, // <--- FIX
               },
               required: ['title']
             }

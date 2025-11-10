@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { db, SIMULATED_USER_ID, getTodayDateRange } from '../utils/db.js';
 import { Timestamp } from '@google-cloud/firestore';
-import { TaskStatus } from '../../types.js';
+// --- FIX: Corrected the import path ---
+import { TaskStatus, TaskPriority } from '../../../types.js';
 
 export const dataRoutes = Router();
 
@@ -62,7 +63,7 @@ dataRoutes.get('/kpis', async (req, res) => {
  * Fetches tasks based on filters. Powers Dashboard and Task Stream.
  */
 dataRoutes.get('/tasks', async (req, res) => {
-  const filter = req.query.filter as 'overdue' | 'due_today' | 'ingested';
+  const filter = req.query.filter as 'overdue' | 'due_today' | 'ingested' | 'action_required' | 'waiting_on' | 'fyi';
   try {
     let query: FirebaseFirestore.Query = tasksCollection.where('userId', '==', SIMULATED_USER_ID);
 
@@ -78,7 +79,24 @@ dataRoutes.get('/tasks', async (req, res) => {
         .where('dueAt', '<=', end)
         .where('status', '!=', TaskStatus.Done)
         .orderBy('dueAt', 'asc');
-    } else {
+    } 
+    // --- FIX: Added backend logic for Inbox tabs ---
+    else if (filter === 'action_required') {
+      query = query
+        .where('priority', 'in', [TaskPriority.Critical, TaskPriority.High])
+        .where('status', '!=', TaskStatus.Done)
+        .orderBy('createdAt', 'desc'); // Order by creation
+    } else if (filter === 'waiting_on') {
+      query = query
+        .where('status', '==', TaskStatus.Blocked)
+        .orderBy('createdAt', 'desc'); // Order by creation
+    } else if (filter === 'fyi') {
+       query = query
+        .where('status', '==', TaskStatus.Done)
+        .orderBy('createdAt', 'desc'); // Order by creation
+    }
+    // --- End Fix ---
+    else {
       // 'ingested' or no filter
       query = query.orderBy('createdAt', 'desc');
     }

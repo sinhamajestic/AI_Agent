@@ -1,4 +1,13 @@
-import { GoogleGenerativeAI, FunctionDeclaration, GenerativeModel, Tool, ChatSession, Content } from '@google/generative-ai';
+import {
+  GoogleGenerativeAI,
+  FunctionDeclaration,
+  GenerativeModel,
+  Tool,
+  ChatSession,
+  Content,
+  FunctionDeclarationSchemaType, // <--- FIX 1: Import the enum
+  GenerateContentResult
+} from '@google/generative-ai';
 import { getTasks, createTask, getSummaries } from './firestore.tools.js';
 
 // --- This is the "lift and shift" of your SmartAgent.tsx logic ---
@@ -11,10 +20,10 @@ const functionDeclarations: FunctionDeclaration[] = [
     name: 'getTasks',
     description: "Get a list of the user's tasks based on a status filter.",
     parameters: {
-      type: 'OBJECT',
+      type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX 2: Use the enum
       properties: {
         status: {
-          type: 'STRING',
+          type: FunctionDeclarationSchemaType.STRING, // <--- FIX 3: Use the enum
           description: 'The status to filter tasks by. Can be "overdue", "due_today", or "all".',
           enum: ['overdue', 'due_today', 'all'],
         },
@@ -26,11 +35,11 @@ const functionDeclarations: FunctionDeclaration[] = [
     name: 'createTask',
     description: 'Create a new task for the user.',
     parameters: {
-      type: 'OBJECT',
+      type: FunctionDeclarationSchemaType.OBJECT, // <--- FIX 4: Use the enum
       properties: {
-        title: { type: 'STRING', description: 'The title of the task.' },
-        priority: { type: 'STRING', description: 'The priority of the task. Can be "low", "medium", "high", or "critical".', enum: ['low', 'medium', 'high', 'critical'] },
-        dueDate: { type: 'STRING', description: 'The due date of the task in ISO 8601 format. e.g., 2025-11-12T10:00:00Z' },
+        title: { type: FunctionDeclarationSchemaType.STRING, description: 'The title of the task.' }, // <--- FIX 5
+        priority: { type: FunctionDeclarationSchemaType.STRING, description: 'The priority of the task. Can be "low", "medium", "high", or "critical".', enum: ['low', 'medium', 'high', 'critical'] }, // <--- FIX 6
+        dueDate: { type: FunctionDeclarationSchemaType.STRING, description: 'The due date of the task in ISO 8601 format. e.g., 2025-11-12T10:00:00Z' }, // <--- FIX 7
       },
       required: ['title'],
     },
@@ -38,7 +47,7 @@ const functionDeclarations: FunctionDeclaration[] = [
   {
     name: 'getSummaries',
     description: 'Get a list of all meeting and document summaries.',
-    parameters: { type: 'OBJECT', properties: {} }
+    parameters: { type: FunctionDeclarationSchemaType.OBJECT, properties: {} } // <--- FIX 8
   }
 ];
 
@@ -75,38 +84,53 @@ const chat: ChatSession = model.startChat({
 /**
  * Runs the Gemini chat loop with function calling.
  * This is the core logic from your SmartAgent.tsx, now on the backend.
+ * * --- FIX 9: This entire function is rewritten to be typesafe ---
  */
 export async function runAgentChat(prompt: string): Promise<string> {
   try {
-    let result = await chat.sendMessage(prompt);
-    
-    // This loop handles function calling
+    let result: GenerateContentResult = await chat.sendMessage(prompt);
+
     while (true) {
-      const { functionCalls } = result.response.candidates[0].content.parts[0];
-      if (!functionCalls || functionCalls.length === 0) {
-        // No function call, just return the text
-        return result.response.candidates[0].content.parts[0].text || "I'm not sure how to help with that.";
+      const response = result.response;
+      const candidate = response.candidates?.[0];
+
+      if (!candidate) {
+        return "No response candidate found.";
       }
 
-      console.log(`[Gemini] Function call requested: ${functionCalls[0].name}`);
+      // Check for function calls
+      const functionCalls = candidate.content?.parts
+        .filter(part => !!part.functionCall)
+        .map(part => part.functionCall);
+
+      if (!functionCalls || functionCalls.length === 0) {
+        // No function call, get and return the text
+        const text = candidate.content?.parts
+          .filter(part => !!part.text)
+          .map(part => part.text)
+          .join('') || "I'm not sure how to help with that.";
+        return text;
+      }
+
+      // Handle function calls
+      console.log(`[Gemini] Function call(s) requested: ${functionCalls.map(fc => fc?.name).join(', ')}`);
       const functionResponses = [];
 
       for (const call of functionCalls) {
+        if (!call) continue;
         const tool = tools[call.name];
         if (tool) {
-          const result = await tool(call.args);
+          const toolResult = await tool(call.args);
           functionResponses.push({
             name: call.name,
-            response: { result: result }, // No need to stringify
+            response: { result: toolResult },
           });
         }
       }
 
       // Send the function responses back to the model
-      const modelResponse = await chat.sendMessage(JSON.stringify(functionResponses));
-      result = modelResponse.response;
+      result = await chat.sendMessage(JSON.stringify(functionResponses)); // Re-assign the new GenerateContentResult
     }
-
   } catch (error) {
     console.error('Error in Gemini chat loop:', error);
     return 'Sorry, something went wrong on my end. Please try again.';

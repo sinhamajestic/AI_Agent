@@ -1,5 +1,6 @@
 import { db, SIMULATED_USER_ID } from '../utils/db.js';
-import { Task, Summary, TaskPriority, TaskStatus } from '../../types.js';
+// --- FIX: Corrected the import path ---
+import { Task, Summary, TaskPriority, TaskStatus } from '../../../types.js';
 
 const tasksCollection = db.collection('tasks');
 const summariesCollection = db.collection('summaries');

@@ -1,5 +1,6 @@
 import { db, SIMULATED_USER_ID, getTodayDateRange } from '../utils/db.js';
-import { Task, TaskPriority, TaskStatus, Summary } from '../../types.js';
+// --- FIX: Corrected the import path ---
+import { Task, TaskPriority, TaskStatus, Summary } from '../../../types.js';
 import { Timestamp } from '@google-cloud/firestore';
 
 // This file replaces the mock data from your SmartAgent.tsx
@@ -26,8 +27,16 @@ export async function getTasks(status: 'overdue' | 'due_today' | 'all'): Promise
       .where('dueAt', '<=', end)
       .where('status', '!=', TaskStatus.Done);
   }
+  
+  // --- FIX: Added orderBy for 'all' to satisfy Firestore ---
+  if (status === 'all') {
+    query = query.orderBy('createdAt', 'desc');
+  } else {
+    // 'overdue' and 'due_today' must be ordered by dueAt for the query to work
+    query = query.orderBy('dueAt', 'asc');
+  }
 
-  const snapshot = await query.orderBy('dueAt', 'asc').limit(20).get();
+  const snapshot = await query.limit(20).get();
   if (snapshot.empty) {
     return [];
   }

@@ -1,61 +1,93 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TaskItem from './TaskItem';
-import { Task, TaskPriority, TaskStatus } from '../types';
+import { Task } from '../types';
 
-const actionRequiredTasks: Task[] = [
-    { id: '3', title: 'Draft release notes for v2.1', description: '', status: TaskStatus.InProgress, priority: TaskPriority.High, dueAt: '2024-07-22T23:59:00Z', source: { type: 'meeting', origin: 'Weekly Sync' } },
-];
+const API_URL = 'http://localhost:8080/api';
 
-const waitingOnTasks: Task[] = [
-    { id: '8', title: 'Awaiting feedback on proposal', description: '', status: TaskStatus.Blocked, priority: TaskPriority.Medium, dueAt: '2024-07-26T18:00:00Z', source: { type: 'email', origin: 'client@example.com' } },
-];
+type TabName = 'Action Required' | 'Waiting On' | 'FYI';
 
-const fyiTasks: Task[] = [
-    { id: '9', title: 'Project launch successful', description: '', status: TaskStatus.Done, priority: TaskPriority.Low, dueAt: '2024-07-20T18:00:00Z', source: { type: 'slack', origin: '#announcements' } },
-];
+const TABS: TabName[] = ['Action Required', 'Waiting On', 'FYI'];
 
-const tabs = [
-  { name: 'Action Required', tasks: actionRequiredTasks },
-  { name: 'Waiting On', tasks: waitingOnTasks },
-  { name: 'FYI', tasks: fyiTasks },
-];
+// Map tab names to API filters
+const tabFilterMap: Record<TabName, string> = {
+  'Action Required': 'action_required',
+  'Waiting On': 'waiting_on',
+  'FYI': 'fyi',
+};
+
+// Create a new component for the tab panel
+const TabPanel: React.FC<{ filter: string, isActive: boolean }> = ({ filter, isActive }) => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isActive) return; // Don't fetch data for inactive tabs
+
+    const fetchTasks = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/tasks?filter=${filter}`);
+        if (!response.ok) throw new Error('Failed to fetch tasks');
+        const data: Task[] = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error(`Error fetching tasks for filter ${filter}:`, error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [filter, isActive]); // Re-fetch when this tab becomes active
+
+  if (!isActive) return null;
+
+  if (isLoading) {
+    return <p className="text-center text-gray-500 py-8">Loading...</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {tasks.length > 0 ? (
+        tasks.map(task => <TaskItem key={task.id} task={task} />)
+      ) : (
+        <p className="text-center text-gray-500 py-8">Inbox zero! ✨</p>
+      )}
+    </div>
+  );
+};
 
 const Inbox: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(tabs[0].name);
+  const [activeTab, setActiveTab] = useState<TabName>(TABS[0]);
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-base-bg rounded-2xl shadow-sm border border-border">
         <div className="border-b border-border">
           <nav className="-mb-px flex space-x-6 px-6" aria-label="Tabs">
-            {tabs.map((tab) => (
+            {TABS.map((tabName) => (
               <button
-                key={tab.name}
-                onClick={() => setActiveTab(tab.name)}
+                key={tabName}
+                onClick={() => setActiveTab(tabName)}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === tab.name
+                  activeTab === tabName
                     ? 'border-accent-primary text-accent-primary'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {tab.name}
+                {tabName}
               </button>
             ))}
           </nav>
         </div>
         <div className="p-4 sm:p-6">
-            {tabs.map(tab => (
-                <div key={tab.name} className={`${activeTab === tab.name ? 'block' : 'hidden'}`}>
-                    <div className="space-y-3">
-                        {tab.tasks.length > 0 ? (
-                            tab.tasks.map(task => <TaskItem key={task.id} task={task} />)
-                        ) : (
-                           <p className="text-center text-gray-500 py-8">Inbox zero! ✨</p> 
-                        )}
-                    </div>
-                </div>
-            ))}
+          {TABS.map(tabName => (
+            <TabPanel
+              key={tabName}
+              filter={tabFilterMap[tabName]}
+              isActive={activeTab === tabName}
+            />
+          ))}
         </div>
       </div>
     </div>

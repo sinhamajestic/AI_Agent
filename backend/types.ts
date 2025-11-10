@@ -21,7 +21,7 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueAt: string | null; // Store as ISO string
+  dueAt: string | null; // <-- FIX: Changed to allow null
   source: {
     type: 'email' | 'meeting' | 'document' | 'slack' | 'agent' | 'manual';
     origin: string;
