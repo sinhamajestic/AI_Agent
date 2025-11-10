@@ -43,6 +43,7 @@ firebase-debug.log
 gcloud-service-key.json
 service-account.json
 credentials.json
+.venv
 
 # --- OS Garbage ---
 Thumbs.db
