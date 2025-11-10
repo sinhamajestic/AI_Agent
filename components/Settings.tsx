@@ -1,26 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import IntegrationCard from './IntegrationCard';
 import type { Integration } from '../types';
 import { SyncIcon } from './Icons';
 
-const integrations: Integration[] = [
-  { id: 'gmail', name: 'Gmail', enabled: true },
-  { id: 'slack', name: 'Slack', enabled: true },
-  { id: 'notion', name: 'Notion', enabled: true },
-  { id: 'trello', name: 'Trello', enabled: false },
-  { id: 'jira', name: 'Jira', enabled: true },
-];
+const API_URL = 'http://localhost:8080/api';
 
 const Settings: React.FC = () => {
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
-  const handleSync = () => {
+  // Fetch the integrations list from the backend
+  useEffect(() => {
+    const fetchIntegrations = async () => {
+      try {
+        const response = await fetch(`${API_URL}/settings/integrations`);
+        if (!response.ok) throw new Error('Failed to fetch integrations');
+        const data: Integration[] = await response.json();
+        setIntegrations(data);
+      } catch (error) {
+        console.error('Error fetching integrations:', error);
+      }
+    };
+    fetchIntegrations();
+  }, []);
+
+  const handleSync = async () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
+    try {
+      // --- THIS IS THE KEY CHANGE ---
+      // Call the sync endpoint on your backend
+      const response = await fetch(`${API_URL}/settings/sync`, { method: 'POST' });
+      if (!response.ok) throw new Error('Sync failed');
+      
+      const result = await response.json();
+      console.log('Sync result:', result.message);
       setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 2500);
+      // --- END OF KEY CHANGE ---
+    } catch (error) {
+      console.error('Failed to sync:', error);
+      alert('Sync failed. Check the console for details.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -45,9 +67,13 @@ const Settings: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          {integrations.map((integration) => (
-            <IntegrationCard key={integration.id} integration={integration} />
-          ))}
+          {integrations.length > 0 ? (
+            integrations.map((integration) => (
+              <IntegrationCard key={integration.id} integration={integration} />
+            ))
+          ) : (
+            <p className="text-center text-gray-500 py-8">Loading integrations...</p>
+          )}
         </div>
       </div>
     </div>
