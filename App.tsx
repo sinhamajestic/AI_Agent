@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Page } from './types';
 import Sidebar from './components/Sidebar';
@@ -8,6 +7,7 @@ import TaskStream from './components/TaskStream';
 import Inbox from './components/Inbox';
 import Meetings from './components/Meetings';
 import Settings from './components/Settings';
+import SmartAgent from './components/SmartAgent';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -18,6 +18,7 @@ const App: React.FC = () => {
     { id: 'stream', title: 'Task Stream' },
     { id: 'inbox', title: 'Smart Inbox' },
     { id: 'meetings', title: 'Meeting Summaries' },
+    { id: 'agent', title: 'Smart Agent' },
     { id: 'settings', title: 'Settings' },
   ];
 
@@ -33,6 +34,8 @@ const App: React.FC = () => {
         return <Inbox />;
       case 'meetings':
         return <Meetings />;
+      case 'agent':
+        return <SmartAgent />;
       case 'settings':
         return <Settings />;
       default:

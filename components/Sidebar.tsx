@@ -1,7 +1,6 @@
-
 import React from 'react';
 import type { Page } from '../types';
-import { HomeIcon, StreamIcon, InboxIcon, MeetingIcon, SettingsIcon, CloseIcon } from './Icons';
+import { HomeIcon, StreamIcon, InboxIcon, MeetingIcon, SettingsIcon, CloseIcon, BotIcon } from './Icons';
 
 interface SidebarProps {
   currentPage: Page;
@@ -16,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isOpen, 
     { id: 'stream', label: 'Task Stream', icon: <StreamIcon /> },
     { id: 'inbox', label: 'Smart Inbox', icon: <InboxIcon /> },
     { id: 'meetings', label: 'Meetings', icon: <MeetingIcon /> },
+    { id: 'agent', label: 'Smart Agent', icon: <BotIcon /> },
   ];
 
   const NavLink: React.FC<{ id: Page, label: string, icon: React.ReactNode }> = ({ id, label, icon }) => {

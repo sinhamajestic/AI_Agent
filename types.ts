@@ -1,5 +1,4 @@
-
-export type Page = 'dashboard' | 'stream' | 'inbox' | 'meetings' | 'settings';
+export type Page = 'dashboard' | 'stream' | 'inbox' | 'meetings' | 'settings' | 'agent';
 
 export enum TaskStatus {
   Todo = 'todo',
